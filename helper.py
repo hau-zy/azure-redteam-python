@@ -490,3 +490,146 @@ def get_service_principal(auth_data, ID = None):
     
     # extracting response text 
     return r.json()
+
+def get_password(auth_data , user_id = None) :
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    if user_id is None:
+        API = f"me/authentication/passwordMethods"
+    else:
+        API = f"/users/{user_id}/authentication/passwordMethods"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+    res = r.json()
+
+    return res
+
+def invite_user(auth_data, email) :
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"invitations"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    data = {
+        "invitedUserEmailAddress": email,
+        "inviteRedirectUrl": "https://login.microsoft.com"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.post(url = ENDPOINT, headers= header, json=data)
+    
+    res = r.json()
+
+    return res
+
+def get_user(auth_data, user_id) :
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"users/{user_id}"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.get(url = ENDPOINT, headers= header)
+    
+    res = r.json()
+
+    return res
+
+def create_user(auth_data, data = None) :
+    # default patch user to member
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"users/"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    if data is None:
+        data = {
+            "accountEnabled": True,
+            "displayName": "Adele Vance",
+            "mailNickname": "AdeleV",
+            "userPrincipalName": "AdeleV@contoso.onmicrosoft.com",
+            "passwordProfile" : {
+                "forceChangePasswordNextSignIn": False,
+                "password": "xWwvJ]6NMw+bWH-d"
+            }
+
+        }
+        
+    # sending post request and saving response as response object
+    r  = requests.post(url = ENDPOINT, headers= header, json=data)
+    
+    res = r.json()
+
+    return res
+
+def patch_user(auth_data, user_id, data = None) :
+    # default patch user to member
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    graph_token = refresh_token_to(auth_data, 'ms graph', verbose = False)
+    API_V = "v1.0"
+    API = f"users/{user_id}"
+    ENDPOINT = f"https://graph.microsoft.com/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {graph_token['access_token']}",
+        'Content-type': "application/json"
+    }
+    
+    if data is None:
+        data = {
+            'userType': 'Member'
+        }
+
+    # sending post request and saving response as response object
+    r  = requests.patch(url = ENDPOINT, headers= header, json=data)
+    
+    res = r.json()
+
+    return res
